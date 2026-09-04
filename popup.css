@@ -335,6 +335,19 @@ button {
   color: var(--text-color);
 }
 
+.ghost-link {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--primary);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.ghost-link:hover {
+  color: #60caff;
+  text-decoration: underline;
+}
+
 /* ── Logs ──────────────────────────────── */
 
 .logs-section {

@@ -25,17 +25,27 @@ document.addEventListener('DOMContentLoaded', () => {
   const baseUrlInput = document.getElementById('base-url');
   const baseUrlSection = document.getElementById('base-url-section');
   const customModelInput = document.getElementById('custom-model');
+  const keyHelp = document.getElementById('key-help');
+
+  const KEY_LINKS = {
+    gemini: ['https://aistudio.google.com/apikey', 'Get a free key ↗'],
+    groq: ['https://console.groq.com/keys', 'Get a free key ↗'],
+    github: ['https://github.com/settings/personal-access-tokens/new', 'Get a token ↗']
+  };
 
   // Optional local defaults from env.js (git-ignored). See env.example.js.
   const ENV = (typeof self !== 'undefined' && self.AGENT_ENV) ? self.AGENT_ENV : {};
 
   let runInfo = { run: 1, total: 1 };
 
+  // The first entry per provider is the suggested default (free-tier friendly,
+  // reliable for the agent). Users can still change it.
   let modelsByProvider = {
     gemini: [
-      { value: 'gemini-3.5-flash-lite', text: 'Gemini 3.5 Flash-Lite (fast + cheap — recommended)' },
+      { value: 'gemini-3.1-flash-lite', text: 'Gemini 3.1 Flash-Lite — suggested (free tier, fast)' },
       { value: 'gemini-flash-lite-latest', text: 'Gemini Flash-Lite (latest alias)' },
-      { value: 'gemini-3.6-flash', text: 'Gemini 3.6 Flash (smarter, slower)' },
+      { value: 'gemini-3.5-flash-lite', text: 'Gemini 3.5 Flash-Lite' },
+      { value: 'gemini-3.6-flash', text: 'Gemini 3.6 Flash (smarter, slower, tighter limits)' },
       { value: 'gemini-flash-latest', text: 'Gemini Flash (latest alias)' }
     ],
     'chrome-ai': [
@@ -76,6 +86,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (apiKeySection) apiKeySection.style.display = needsKey ? '' : 'none';
     fetchModelsBtn.style.display = needsKey ? '' : 'none';
     baseUrlSection.style.display = provider === 'custom' ? '' : 'none';
+
+    if (keyHelp) {
+      const link = KEY_LINKS[provider];
+      if (link) { keyHelp.href = link[0]; keyHelp.textContent = link[1]; keyHelp.style.display = ''; }
+      else keyHelp.style.display = 'none';
+    }
 
     // For custom: type the model name unless a real list was loaded via Refresh.
     const customListLoaded = (modelsByProvider.custom || []).some(m => m.value);
