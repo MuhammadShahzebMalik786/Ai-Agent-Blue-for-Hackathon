@@ -1,0 +1,28 @@
+# ─── Secrets / local config — NEVER commit ───
+env.js
+.env
+.env.*
+!.env.example
+*.local.js
+config.local.js
+secrets.json
+*.pem
+*.key
+
+# ─── OS / editor cruft ───
+.DS_Store
+Thumbs.db
+desktop.ini
+*.log
+.vscode/
+.idea/
+*.swp
+*~
+
+# ─── Build / packaging ───
+node_modules/
+dist/
+build/
+*.zip
+*.crx
+*.pem

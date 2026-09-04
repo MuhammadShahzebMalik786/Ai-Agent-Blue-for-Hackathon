@@ -1,0 +1,38 @@
+{
+  "_comment": "Reference list of default models per provider. The popup fetches live model lists via the 'Refresh' button; this file is the fallback / documentation.",
+  "updated": "2026-09-03",
+  "providers": {
+    "gemini": {
+      "endpoint": "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
+      "auth": "x-goog-api-key header",
+      "recommended": "gemini-3.5-flash-lite",
+      "models": [
+        { "id": "gemini-3.5-flash-lite", "note": "Fastest + cheapest. Free tier ~15 RPM / ~1000 RPD." },
+        { "id": "gemini-flash-lite-latest", "note": "Alias that always points at the current Flash-Lite." },
+        { "id": "gemini-3.6-flash", "note": "Higher quality, slower, lower free-tier RPM." },
+        { "id": "gemini-flash-latest", "note": "Alias for the current Flash. Used as automatic quota fallback." }
+      ]
+    },
+    "github": {
+      "endpoint": "https://models.inference.ai.azure.com/chat/completions",
+      "auth": "Bearer <github_pat>",
+      "recommended": "gpt-4o-mini",
+      "models": [
+        { "id": "gpt-4o-mini" },
+        { "id": "gpt-4o" },
+        { "id": "Meta-Llama-3-70B-Instruct" },
+        { "id": "Mistral-large" }
+      ]
+    },
+    "groq": {
+      "endpoint": "https://api.groq.com/openai/v1/chat/completions",
+      "auth": "Bearer <gsk_...>",
+      "recommended": "llama-3.3-70b-versatile",
+      "models": [
+        { "id": "llama-3.3-70b-versatile" },
+        { "id": "llama-3.1-8b-instant" },
+        { "id": "llama3-70b-8192" }
+      ]
+    }
+  }
+}

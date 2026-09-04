@@ -1,0 +1,44 @@
+{
+  "manifest_version": 3,
+  "name": "Ai agent Blue",
+  "short_name": "Ai agent Blue",
+  "version": "3.1",
+  "description": "Automates the browser. You don't lift a finger. AI browser automation for Chrome — plans the task, works across tabs, asks before anything irreversible. Gemini, GPT-4o & Groq. Built by Muhammad Shahzeb Malik.",
+  "permissions": [
+    "activeTab",
+    "tabs",
+    "scripting",
+    "storage",
+    "alarms",
+    "sidePanel"
+  ],
+  "host_permissions": [
+    "<all_urls>",
+    "http://localhost/*",
+    "http://127.0.0.1/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "side_panel": {
+    "default_path": "popup.html"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"]
+    }
+  ]
+}

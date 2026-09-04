@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Primary SEO -->
+  <title>Ai agent Blue — Automates the browser. You don't lift a finger.</title>
+  <meta name="description" content="Ai agent Blue automates your browser with AI. Navigate, click, type, remember — hands-free across any website. Supports Google Gemini, GPT-4o, and Groq. Free Chrome extension by Muhammad Shahzeb Malik.">
+  <meta name="keywords" content="AI browser automation, Chrome extension, AI agent, web automation, browser bot, GPT Chrome extension, Gemini automation, browser AI, Muhammad Shahzeb Malik, AI Agent Blue">
+  <meta name="author" content="Muhammad Shahzeb Malik">
+  <meta name="robots" content="index, follow">
+
+  <!-- Open Graph (Social Sharing) -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Ai agent Blue — Automates the browser. You don't lift a finger.">
+  <meta property="og:description" content="Ai agent Blue automates your browser with AI — navigate, click, type, and remember across any website. Built by Muhammad Shahzeb Malik.">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:site_name" content="Ai agent Blue">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Ai agent Blue — Browser Automation with AI">
+  <meta name="twitter:description" content="Automates the browser. You don't lift a finger. Chrome extension by Muhammad Shahzeb Malik.">
+  <meta name="twitter:creator" content="@MuhammadShahzebMalik">
+
+  <!-- PWA / Chrome Extension Hints -->
+  <meta name="theme-color" content="#050d1a">
+  <meta name="application-name" content="Ai agent Blue">
+
+  <link rel="stylesheet" href="popup.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="brand">
+        <h1>Ai agent <span style="color:#4da3ff;">Blue</span></h1>
+        <span class="tagline">✦ Automates the browser. You don't lift a finger.</span>
+      </div>
+      <div class="header-right">
+        <span id="step-counter" class="step-counter" title="API calls used this session">Step 0</span>
+        <div class="status-indicator" id="status-indicator"></div>
+      </div>
+    </div>
+    
+    <div class="form-grid">
+      <div class="section">
+        <label for="provider-select">AI Provider</label>
+        <select id="provider-select">
+          <option value="gemini">Google Gemini</option>
+          <option value="chrome-ai">Chrome Built-in AI · Nano (no key)</option>
+          <option value="custom">Custom · OpenAI-compatible</option>
+          <option value="github">GitHub Models</option>
+          <option value="groq">Groq</option>
+        </select>
+      </div>
+
+      <div class="section">
+        <div class="section-header">
+          <label for="model-select">AI Model</label>
+          <button id="fetch-models-btn" class="ghost-btn" style="font-size: 11px; padding: 2px 6px;" title="Fetch available models from API">Refresh</button>
+        </div>
+        <select id="model-select">
+          <!-- populated dynamically by popup.js -->
+        </select>
+        <input type="text" id="custom-model" placeholder="e.g. gpt-4o-mini" spellcheck="false" style="display: none;">
+      </div>
+    </div>
+
+    <div class="section" id="base-url-section" style="display: none;">
+      <label for="base-url">Base URL (OpenAI-compatible)</label>
+      <input type="text" id="base-url" placeholder="http://localhost:20128/v1" spellcheck="false">
+    </div>
+
+    <div class="section">
+      <label for="api-key" id="api-key-label">API Key (Gemini)</label>
+      <input type="password" id="api-key" placeholder="AIza...">
+    </div>
+
+    <div class="section">
+      <div class="section-header">
+        <label for="goal">What should I do?</label>
+        <button id="mic-btn" class="ghost-btn" title="Dictate your command by voice">🎤 Speak</button>
+      </div>
+      <textarea id="goal" rows="3" placeholder="e.g. Search Google for a topic, open gemini.google.com in a new tab and draft a post, humanize it, then paste it into a new Google Doc..."></textarea>
+    </div>
+
+    <div class="section run-options">
+      <div class="repeat-field">
+        <label for="repeat-count">Repeat</label>
+        <input type="number" id="repeat-count" min="1" max="100" value="1">
+        <span class="hint">×</span>
+      </div>
+      <label class="checkbox-field" title="Skip the approval prompt before send / submit / buy / delete / post actions">
+        <input type="checkbox" id="autonomous-mode"> Autonomous mode
+      </label>
+    </div>
+
+    <div class="button-row">
+      <button id="start-btn" class="primary-btn">▶ Start Agent</button>
+      <button id="stop-btn" class="danger-btn" style="display: none;">⏹ Stop Agent</button>
+    </div>
+
+    <div class="section plan-section" id="plan-section" style="display: none;">
+      <label>Task Plan</label>
+      <p id="plan-thinking" class="plan-thinking" style="display: none;"></p>
+      <ol id="plan-list" class="plan-list"></ol>
+    </div>
+
+    <!-- Human Node Banner – shown when agent needs human help -->
+    <div id="human-banner" class="human-banner" style="display: none;">
+      <div class="human-banner-row">
+        <div class="human-banner-icon">🧑‍💻</div>
+        <div class="human-banner-body">
+          <strong id="human-banner-title">Human Input Required</strong>
+          <span id="human-banner-reason">Please complete the CAPTCHA or login on the page.</span>
+        </div>
+      </div>
+      <div class="human-banner-actions">
+        <input type="text" id="human-answer" class="human-answer" placeholder="Type your answer, then Resume (leave blank if you did it on the page)">
+        <button id="resume-btn" class="resume-btn">▶ Resume</button>
+      </div>
+    </div>
+
+    <div class="io-grid">
+      <div class="section logs-section">
+        <div class="section-header">
+          <label>Agent Logs</label>
+          <button id="clear-logs-btn" class="ghost-btn" title="Clear log history">Clear</button>
+        </div>
+        <div id="logs" class="logs"></div>
+      </div>
+
+      <div class="section memory-section">
+        <label>Memory Scratchpad</label>
+        <pre id="memory-view" class="memory-view">{}</pre>
+      </div>
+    </div>
+
+    <!-- Developer Identity / Contact -->
+    <div class="contact-section">
+      <div class="contact-header">
+        <span class="contact-title">👨‍💻 Built by</span>
+        <strong class="contact-name">Muhammad Shahzeb Malik</strong>
+      </div>
+      <div class="contact-links">
+        <a href="mailto:malikshahzebabd@gmail.com" class="contact-link" title="Send Email">
+          <span class="contact-icon">✉️</span> Gmail
+        </a>
+        <a href="https://github.com/muhammadShahzebMalik786" target="_blank" class="contact-link" title="GitHub Profile">
+          <span class="contact-icon">🐙</span> GitHub
+        </a>
+        <a href="https://wa.me/923448970498" target="_blank" class="contact-link whatsapp-link" title="WhatsApp">
+          <span class="contact-icon">💬</span> WhatsApp
+        </a>
+      </div>
+    </div>
+  </div>
+  <!-- Optional local defaults (git-ignored). Copy env.example.js to env.js and fill it in. -->
+  <script src="env.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

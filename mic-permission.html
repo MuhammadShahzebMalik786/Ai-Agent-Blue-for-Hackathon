@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Enable Microphone — Ai agent Blue</title>
+  <style>
+    :root { color-scheme: dark; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #050d1a;
+      color: #e2eeff;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif;
+    }
+    .card {
+      max-width: 460px;
+      margin: 24px;
+      padding: 28px 30px;
+      background: #0d1f38;
+      border: 1px solid #1e3a5f;
+      border-radius: 14px;
+      text-align: center;
+    }
+    h1 { font-size: 1.15rem; margin: 0 0 6px; }
+    .icon { font-size: 2.6rem; }
+    p { font-size: 0.9rem; line-height: 1.5; color: #a9c6e6; }
+    .status {
+      margin-top: 16px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    .status.ok    { background: rgba(16,185,129,.14); color: #34d399; border: 1px solid #10b981; }
+    .status.err   { background: rgba(239,68,68,.14);  color: #f87171; border: 1px solid #ef4444; }
+    .status.wait  { background: rgba(59,130,246,.14); color: #60a5fa; border: 1px solid #3b82f6; }
+    button {
+      margin-top: 18px;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #1d6fdb, #6366f1);
+      color: #fff;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    ol { text-align: left; font-size: 0.85rem; color: #a9c6e6; line-height: 1.6; }
+    code { background: #050d1a; padding: 1px 5px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">🎤</div>
+    <h1>Enable voice commands</h1>
+    <p>Ai agent Blue needs one-time microphone permission so you can speak your commands in the extension popup.</p>
+    <div id="status" class="status wait">Requesting microphone access…</div>
+    <button id="retry" style="display:none;">Try again</button>
+    <div id="help" style="display:none;">
+      <p>If nothing appeared, or you clicked "Block":</p>
+      <ol>
+        <li>Click the <strong>site-settings icon</strong> (or padlock) at the left of the address bar.</li>
+        <li>Set <strong>Microphone</strong> to <strong>Allow</strong>.</li>
+        <li>Reload this page.</li>
+      </ol>
+    </div>
+  </div>
+
+  <script src="mic-permission.js"></script>
+</body>
+</html>
