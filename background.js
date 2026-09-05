@@ -525,10 +525,14 @@ CORE RULES — Follow these strictly:
 
 MEMORY RULES:
 M1. Each distinct piece of data goes in its OWN memory key (see MEMORY list below). Do NOT reuse one key for two different things — you will overwrite and lose data.
-M2. To capture text from the page or an AI response, use EXTRACT_MEMORY (it grabs the real page text). Use SAVE_MEMORY only for short notes you write yourself (< 250 chars) — never paste long content through SAVE_MEMORY, it gets truncated.
-M3. To put saved content into a field, use TYPE_FROM_MEMORY with the memoryKey. NEVER retype saved content yourself — you will paraphrase or truncate it.
+M2. Two ways to fill a key:
+  - EXTRACT_MEMORY (elementId:0) — grabs the real text off the current page. Use this to capture an article, an AI response, or a job/product description verbatim.
+  - SAVE_MEMORY — writes a value YOU compose (a structured record, a filled-in schema, a short note). Fine up to a few thousand characters. Use "append": true to add each new record to a list without overwriting the earlier ones.
+  Do NOT retype a long page verbatim through SAVE_MEMORY — extract it. But a record you built from what you read (fields filled in, scored, summarised) is exactly what SAVE_MEMORY is for.
+M3. To put a key's content into a form field, use TYPE_FROM_MEMORY with the memoryKey. Never retype it by hand.
 M4. THINK BEFORE PASTING: before every TYPE_FROM_MEMORY, check the MEMORY list. The key MUST show [x] with a preview matching what you want. If it shows [ ] (EMPTY), do NOT paste — go fill it first. State in "think" which key you're using and why it's the right one.
 M5. Before any SUBMIT / POST / SEND, confirm the field content is COMPLETE. If a paste reported only part landed, fix it (retry / chunk) — never submit a half-filled field.
+M6. If an action FAILED, the history below says why. Do NOT repeat the same action — fix what the feedback told you or try a different approach.
 ${stuckWarning}
 ${renderMemory()}
 
@@ -548,7 +552,7 @@ Available actions:
 6b. {"think":"...", "action": "CLOSE_TABS", "which": "others", "reason": "..."} — which: "others" (all but the one you're on), "duplicates" (dedupe by URL), or "all" (opens a blank tab, closes the rest). Pinned tabs are kept.
 7. {"think":"...", "action": "EXTRACT_MEMORY", "elementId": 0, "key": "<memory key>", "append": false, "reason": "..."} — elementId:0 auto-grabs the main answer / result / article text on the page. Set "append": true to add to what the key already holds (e.g. collecting items across pages).
 8. {"think":"which key and why it's right", "action": "TYPE_FROM_MEMORY", "elementId": 123, "memoryKey": "<key>", "prefix": "", "suffix": "", "submit": false, "reason": "..."} — injects the FULL content of that key into the field.
-9. {"think":"...", "action": "SAVE_MEMORY", "key": "<key>", "value": "short note < 250 chars", "append": false, "reason": "..."}
+9. {"think":"...", "action": "SAVE_MEMORY", "key": "<key>", "value": "a note or a structured record you composed", "append": true, "reason": "..."} — use append:true to add each record to a growing list.
 10. {"think":"...", "action": "WAIT", "seconds": 15, "reason": "..."}
 11. {"think":"...", "action": "HUMAN_NEEDED", "reason": "CAPTCHA / login / needs your decision"}
 12. {"think":"...", "action": "DONE", "reason": "..."}
@@ -566,10 +570,12 @@ What is your next single action?`;
 
 async function callLLMModel(apiKey, provider, model, goal, domState) {
   const systemPrompt = buildSystemPrompt(goal, domState);
+  const VALID = ['CLICK', 'TYPE', 'PRESS_ENTER', 'NAVIGATE', 'NEW_TAB', 'SCROLL', 'CLOSE_TABS',
+                 'EXTRACT_MEMORY', 'TYPE_FROM_MEMORY', 'SAVE_MEMORY', 'WAIT', 'HUMAN_NEEDED', 'DONE'];
   const messages = [
-    'Think, then reply with ONLY the JSON object for your single next action — include the "think" field, no prose outside the JSON, no code fences.',
-    'That was not valid JSON. Output ONLY a raw JSON object like {"think":"...","action":"CLICK","elementId":1,"reason":"..."} and nothing else.',
-    'STILL not JSON. Your ENTIRE reply must be one JSON object starting with { and ending with }. No words before or after.'
+    'Think, then reply with ONLY the JSON object for your single next action — include the "think" and "action" fields, no prose outside the JSON, no code fences.',
+    'That reply was missing a valid "action". Output ONLY a raw JSON object like {"think":"...","action":"CLICK","elementId":1,"reason":"..."} — the "action" must be one of: ' + VALID.join(', ') + '.',
+    'STILL not a valid action object. Your ENTIRE reply must be one JSON object with a "action" field set to one of the allowed action names. No words before or after.'
   ];
   let lastErr;
   for (let i = 0; i < messages.length; i++) {
@@ -577,12 +583,17 @@ async function callLLMModel(apiKey, provider, model, goal, domState) {
       // A small thinking budget makes a weak model much steadier at choosing the
       // right element / action. Providers that don't support it ignore it.
       const raw = await callLLMRaw(apiKey, provider, model, systemPrompt, messages[i],
-        { json: true, thinking: 512, maxOutputTokens: 2000 });
-      return parseJsonLoose(raw);
+        { json: true, thinking: 512, maxOutputTokens: 2600 });
+      const parsed = parseJsonLoose(raw);
+      if (!parsed || typeof parsed.action !== 'string' || !VALID.includes(parsed.action.toUpperCase())) {
+        throw new Error(`Could not parse JSON: no valid "action" field (got ${JSON.stringify(parsed && parsed.action)})`);
+      }
+      parsed.action = parsed.action.toUpperCase();
+      return parsed;
     } catch (e) {
       lastErr = e;
       if (!/Could not parse JSON|Unexpected token/i.test(e.message)) throw e;  // network/API errors: bail now
-      if (i < messages.length - 1) logToUI('↻ Model replied with prose — re-asking for JSON…', 'system');
+      if (i < messages.length - 1) logToUI('↻ Model reply had no valid action — re-asking…', 'system');
     }
   }
   throw lastErr;
@@ -657,10 +668,10 @@ async function dispatchAction(action, tabId) {
 
   if (action.action === 'SAVE_MEMORY') {
     const val = String(action.value == null ? '' : action.value);
-    if (val.length > 280) {
+    if (val.length > 4000) {
       return {
         status: 'FAILED',
-        feedback: `SAVE_MEMORY is for short notes only (${val.length} chars given). To capture page or AI-response text into "${action.key}", use EXTRACT_MEMORY with elementId:0.`
+        feedback: `That's ${val.length} chars — too long to be written by hand without errors. If this is text copied from the page, use EXTRACT_MEMORY instead. If it's a record you composed, shorten it or split it across SAVE_MEMORY calls with append:true.`
       };
     }
     if (action.append && agentMemory[action.key]) {
@@ -921,14 +932,14 @@ async function handleDoneOrRepeat(apiKey, provider, model, goal) {
     runNumber++;
     logToUI(`🔁 Run ${runNumber - 1}/${initialRepeats} complete. Starting run ${runNumber}…`, 'success');
 
-    // Fresh per-run state; keep the plan.
-    agentMemory = {};
+    // Fresh action loop, but KEEP memory + plan — so "do X, N times" tasks that
+    // gather into a list accumulate across runs instead of losing each run's work.
     actionHistory = [];
     stepCount = 0;
     retryCount = 0;
     pageLoadRetries = 0;
     stuckBreaks = 0;
-    humanNotes = [];
+    logToUI('   (memory carried over from the previous run)', 'system');
     taskPlan.forEach(s => s.done = false);
     updateMemoryUI();
     updateStepCount();

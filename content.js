@@ -495,49 +495,65 @@ function executeAction(action) {
           });
         }
 
-        const RESPONSE_SELECTORS = [
-          // Gemini Web / AI Studio
-          'model-response', 'message-content', 'ms-cmark-node',
-          '[data-message-author-role="model"]',
-          // ChatGPT
-          '[data-message-author-role="assistant"]',
-          // Claude
-          '[data-testid="message-content"]', 'div.font-claude-message',
-          // Generic assistant/markdown containers
-          '.markdown', '.prose',
-          // Fallback: any large text block
-          'article', '[class*="model"]', '[class*="response"]', '[class*="message"]'
-        ];
-
         let foundEl = null;
         let foundText = '';
-        for (const sel of RESPONSE_SELECTORS) {
+
+        // 1. Known chat-assistant containers — reliable, take the LAST one.
+        const CHAT_SELECTORS = [
+          'model-response', 'message-content', 'ms-cmark-node',
+          '[data-message-author-role="model"]', '[data-message-author-role="assistant"]',
+          '[data-testid="message-content"]', 'div.font-claude-message'
+        ];
+        for (const sel of CHAT_SELECTORS) {
           const all = document.querySelectorAll(sel);
-          if (all.length > 0) {
-            foundEl = all[all.length - 1]; // Always grab the LAST response
-            foundText = (foundEl.innerText || foundEl.textContent || '').trim();
-            if (foundText.length >= 20) break;
+          if (all.length) {
+            const t = (all[all.length - 1].innerText || '').trim();
+            if (t.length >= 20) { foundEl = all[all.length - 1]; foundText = t; break; }
           }
         }
 
-        // Fallback for non-chat pages (humanizers, paraphrasers, articles):
-        // take the fullest textarea/editable, else the largest readable block.
-        if (foundText.length < 20) {
+        // 2. Known content containers (job posts, articles, docs, humanizer outputs):
+        //    take the LARGEST match, not the last — pages have many small *message* nodes.
+        if (foundText.length < 40) {
+          const CONTENT_SELECTORS = [
+            '#jobDescriptionText', '.jobsearch-JobComponent-description',      // Indeed
+            '.show-more-less-html__markup', '.description__text',              // LinkedIn jobs
+            '[data-testid="jobDescription"]', '[class*="job-description" i]', '[class*="jobDescription" i]',
+            '[id*="description" i]', '[class*="description" i]',
+            '.markdown', '.prose', 'article', 'main', '[role="main"]',
+            '[class*="article-body" i]', '[class*="post-content" i]', '.entry-content', '.content'
+          ];
           let best = '', bestEl = null;
-          document.querySelectorAll('textarea, [contenteditable="true"], input[type="text"]').forEach(f => {
+          for (const sel of CONTENT_SELECTORS) {
+            document.querySelectorAll(sel).forEach(c => {
+              const t = (c.innerText || '').trim();
+              if (t.length > best.length && t.length < 60000) { best = t; bestEl = c; }
+            });
+            if (best.length >= 200) break;
+          }
+          if (best.length > foundText.length) { foundText = best; foundEl = bestEl; }
+        }
+
+        // 3. Fullest textarea / editable (paraphraser & humanizer output boxes).
+        if (foundText.length < 40) {
+          let best = '', bestEl = null;
+          document.querySelectorAll('textarea, [contenteditable="true"]').forEach(f => {
             const v = (f.value || f.innerText || '').trim();
             if (v.length > best.length) { best = v; bestEl = f; }
           });
-          if (best.length < 40) {
-            const container = document.querySelector('main, article, [role="main"]') || document.body;
-            document.querySelectorAll('main, article, [role="main"], section, .content, #content, .post, .entry, .article-body').forEach(c => {
-              const t = (c.innerText || '').trim();
-              if (t.length > best.length && t.length < 40000) { best = t; bestEl = c; }
-            });
-            if (best.length < 40) { best = (container.innerText || '').trim().slice(0, 40000); bestEl = container; }
-          }
-          foundText = best;
-          foundEl = bestEl;
+          if (best.length >= 40) { foundText = best; foundEl = bestEl; }
+        }
+
+        // 4. Last resort: the biggest text block anywhere on the page.
+        if (foundText.length < 40) {
+          let best = '', bestEl = null;
+          document.querySelectorAll('div, section, td').forEach(c => {
+            if (c.childElementCount > 40) return;             // skip huge layout wrappers
+            const t = (c.innerText || '').trim();
+            if (t.length > best.length && t.length < 60000) { best = t; bestEl = c; }
+          });
+          foundText = best || (document.body.innerText || '').trim().slice(0, 40000);
+          foundEl = bestEl || document.body;
         }
 
         if (!foundEl || foundText.length < 20) {
